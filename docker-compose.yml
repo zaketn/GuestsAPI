@@ -5,7 +5,12 @@ services:
       dockerfile: ./build/docker/go/Dockerfile
     container_name: "zaketn-guests-api-golang"
     ports:
-      - 8000:8000
+      - ${API_PORT}:8000
+    environment:
+      PG_USER: ${PG_USER}
+      PG_PASSWORD: ${PG_PASSWORD}
+      PG_DB_NAME: ${PG_DB_NAME}
+    entrypoint: ["./build/docker/go/migrate.sh"]
     depends_on:
       - db
 
@@ -13,6 +18,8 @@ services:
     image: postgres:16-alpine
     volumes:
       - ./build/docker/postgres/db_data:/var/lib/postgresql/data
+    ports:
+      - ${PG_PORT}:5432
     container_name: "zaketn-guests-api-postgres"
     environment:
       POSTGRES_USER: ${PG_USER}
