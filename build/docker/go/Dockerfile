@@ -13,4 +13,6 @@ COPY . .
 RUN go build -v -o /usr/local/bin/app ./cmd/
 RUN chmod +x ./build/docker/go/migrate.sh
 
+ENTRYPOINT ["./build/docker/go/migrate.sh"]
+
 CMD ["app"]

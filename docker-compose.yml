@@ -10,7 +10,7 @@ services:
       PG_USER: ${PG_USER}
       PG_PASSWORD: ${PG_PASSWORD}
       PG_DB_NAME: ${PG_DB_NAME}
-    entrypoint: ["./build/docker/go/migrate.sh"]
+      PG_PORT: ${PG_PORT}
     depends_on:
       - db
 
