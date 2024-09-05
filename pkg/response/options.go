@@ -37,6 +37,7 @@ func WithData(data interface{}) OptsFunc {
 	return func(options *RespOpts) {
 		dataMap := make(map[string]interface{})
 		dataMap["result"] = data
+		options.Data = dataMap
 	}
 }
 
@@ -44,6 +45,7 @@ func WithNamedData(dataName string, data interface{}) OptsFunc {
 	return func(options *RespOpts) {
 		dataMap := make(map[string]interface{})
 		dataMap[dataName] = data
+		options.Data = dataMap
 	}
 }
 
