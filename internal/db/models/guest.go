@@ -13,16 +13,16 @@ type GuestModel struct {
 	DB *pgx.Conn
 }
 
-func (m *GuestModel) Create(guest *Guest) (int, error) {
+func (m *GuestModel) Create(guest *Guest) (*Guest, error) {
 	sql := `INSERT INTO guests (name, last_name, email, phone, country) VALUES ($1, $2, $3, $4, $5) RETURNING id`
 
 	err := m.DB.QueryRow(sql, guest.Name, guest.LastName, guest.Email, guest.Phone, guest.Country).Scan(&guest.Id)
 
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return guest.Id, nil
+	return guest, nil
 }
 
 func (m *GuestModel) Get(id int) (*Guest, error) {
