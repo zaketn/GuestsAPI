@@ -5,8 +5,12 @@ import (
 )
 
 type Guest struct {
-	Id                                    int
-	Name, LastName, Email, Phone, Country string
+	Id       int    `json:"id"`
+	Name     string `json:"name"`
+	LastName string `json:"lastName"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Country  string `json:"country"`
 }
 
 type GuestModel struct {
@@ -45,7 +49,7 @@ func (m *GuestModel) Get(id int) (*Guest, error) {
 }
 
 func (m *GuestModel) GetAll() ([]*Guest, error) {
-	sql := "SELECT * FROM guests"
+	sql := "SELECT * FROM guests ORDER BY id"
 	guests := make([]*Guest, 0)
 
 	query, err := m.DB.Query(sql)
