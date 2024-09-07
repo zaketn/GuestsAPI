@@ -1,12 +1,15 @@
 package validation
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 func NotEmpty() Rule {
@@ -79,13 +82,24 @@ func Phone() Rule {
 
 func CountryCode() Rule {
 	return func(fieldValue string) error {
-		regex := `^[A-Z]{2}$`
-		re := regexp.MustCompile(regex)
-		if !re.MatchString(fieldValue) {
-			return errors.New("country should be in code format e.g US")
+		byt, err := os.ReadFile("./pkg/validation/storage/country_phone.json")
+		if err != nil {
+			log.Println(err)
+			return errors.New("failed to get the file with countries")
 		}
 
-		return nil
+		var dat map[string]interface{}
+		if err := json.Unmarshal(byt, &dat); err != nil {
+			panic(err)
+		}
+
+		_, countryExists := dat[strings.ToUpper(fieldValue)]
+
+		if countryExists {
+			return nil
+		}
+
+		return errors.New("country should be valid country code e.g US")
 	}
 }
 
@@ -94,11 +108,7 @@ func Exists(db *pgx.Conn, table, columnName string) Rule {
 		query := fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM %s WHERE %s=$1)", table, columnName)
 
 		var exists bool
-
 		db.QueryRow(query, fieldValue).Scan(&exists)
-
-		log.Println(query)
-		log.Println(exists)
 
 		if exists == true {
 			return nil
