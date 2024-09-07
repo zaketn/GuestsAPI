@@ -18,7 +18,8 @@ type GuestModel struct {
 }
 
 func (m *GuestModel) Create(guest *Guest) (*Guest, error) {
-	sql := `INSERT INTO guests (name, last_name, email, phone, country) VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	sql := `INSERT INTO guests (name, last_name, email, phone, country)
+			VALUES (INITCAP($1), INITCAP($2), $3, $4, $5) RETURNING id`
 
 	err := m.DB.QueryRow(sql, guest.Name, guest.LastName, guest.Email, guest.Phone, guest.Country).Scan(&guest.Id)
 
@@ -75,11 +76,11 @@ func (m *GuestModel) GetAll() ([]*Guest, error) {
 
 func (m *GuestModel) Update(newData *Guest) (*Guest, error) {
 	sql := `UPDATE guests SET 
-                  name = $1,
-                  last_name = $2,
+                  name = INITCAP($1),
+                  last_name = INITCAP($2),
                   email = $3,
                   phone = $4,
-                  country = $5
+                  country = UPPER($5)
               WHERE id = $6
               RETURNING id, name, last_name, email, phone, country`
 
