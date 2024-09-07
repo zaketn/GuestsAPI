@@ -14,10 +14,10 @@ func router(app *application) *chi.Mux {
 
 	r.Get("/guests", app.index)
 
-	r.Post("/guest/{id}", app.createGuest)
-	r.Get("/guest/{id}", app.getGuest)
-	r.Put("/guest/", app.updateGuest)
-	r.Delete("/guest/{id}", app.deleteGuest)
+	r.Post("/guest", app.createGuest)
+	r.Get("/guest/", app.getGuest)
+	r.Put("/guest", app.updateGuest)
+	r.Delete("/guest", app.deleteGuest)
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		response.ReturnError(w, response.Make(response.WithCode(http.StatusNotFound)), http.StatusNotFound)
