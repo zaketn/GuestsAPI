@@ -1,24 +1,28 @@
 package response
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 )
 
-func BadRequest() []byte {
-	return Make(WithCode(http.StatusBadRequest))
+func ReturnBadRequestError(w http.ResponseWriter, err error) {
+	log.Println(err)
+
+	res := Make(WithCode(http.StatusBadRequest), WithMessage(err.Error()))
+	jsonError(w, string(res), http.StatusBadRequest)
 }
 
-func InternalServerError() []byte {
-	return Make(WithCode(http.StatusInternalServerError))
+func ReturnNotFoundError(w http.ResponseWriter, err error) {
+	log.Println(err)
+
+	res := Make(WithCode(http.StatusNotFound), WithMessage(err.Error()))
+	jsonError(w, string(res), http.StatusNotFound)
 }
 
 func ReturnInternalError(w http.ResponseWriter, err error) {
 	log.Println(err)
 
 	res := Make(WithCode(http.StatusInternalServerError))
-
 	jsonError(w, string(res), http.StatusInternalServerError)
 }
 
@@ -36,6 +40,4 @@ func jsonError(w http.ResponseWriter, error string, code int) {
 	h.Set("Content-Type", "application/json")
 	h.Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
-
-	fmt.Fprintln(w, error)
 }
