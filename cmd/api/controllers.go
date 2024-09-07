@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/go-chi/chi/v5"
 	"github.com/zaketn/GuestsAPI/internal/db/models"
 	"github.com/zaketn/GuestsAPI/pkg/response"
+	"github.com/zaketn/GuestsAPI/pkg/validation"
 	"net/http"
 	"strconv"
 )
@@ -11,28 +11,65 @@ import (
 func (app application) index(w http.ResponseWriter, r *http.Request) {
 	guests, err := app.guest.GetAll()
 	if err != nil {
-		response.ReturnError(w, response.BadRequest(), http.StatusBadRequest)
+		response.ReturnInternalError(w, err)
 		return
 	}
 
-	res := response.Make(response.WithNamedData("guests", guests))
+	res := response.Make(
+		response.WithNamedData("guests", guests),
+		response.WithMessage("The list of all users."),
+	)
 
 	w.Write(res)
 }
 
 func (app application) createGuest(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	err := validation.FormValidator{Request: r}.Validate(&validation.Ruleset{
+		Rules: &map[string][]validation.Rule{
+			"name": {
+				validation.NotEmpty(),
+				validation.Length(1, 128),
+				validation.String(),
+			},
+			"last_name": {
+				validation.NotEmpty(),
+				validation.Length(1, 128),
+			},
+			"email": {
+				validation.NotEmpty(),
+				validation.Email(),
+				validation.DoesNotExist(app.db, "guests", "email"),
+			},
+			"phone": {
+				validation.NotEmpty(),
+				validation.Phone(),
+				validation.DoesNotExist(app.db, "guests", "phone"),
+			},
+			"country": {
+				validation.CountryCode(),
+			},
+		}})
 	if err != nil {
-		response.ReturnError(w, response.BadRequest(), http.StatusBadRequest)
+		response.ReturnBadRequestError(w, err)
 		return
 	}
 
 	newGuest := models.Guest{
-		Name:     r.Form.Get("name"),
-		LastName: r.Form.Get("last_name"),
-		Email:    r.Form.Get("email"),
-		Phone:    r.Form.Get("phone"),
-		Country:  r.Form.Get("country"),
+		Name:     r.PostForm.Get("name"),
+		LastName: r.PostForm.Get("last_name"),
+		Email:    r.PostForm.Get("email"),
+		Phone:    r.PostForm.Get("phone"),
+		Country:  r.PostForm.Get("country"),
+	}
+
+	if newGuest.Country == "" {
+		country, err := matchCountryFromPhone(newGuest.Phone)
+		if err != nil {
+			response.ReturnInternalError(w, err)
+			return
+		}
+
+		newGuest.Country = country
 	}
 
 	guest, err := app.guest.Create(&newGuest)
@@ -51,48 +88,84 @@ func (app application) createGuest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app application) getGuest(w http.ResponseWriter, r *http.Request) {
-	guestId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	err := validation.FormValidator{Request: r}.Validate(&validation.Ruleset{
+		Rules: &map[string][]validation.Rule{
+			"id": {
+				validation.NotEmpty(),
+				validation.Numeric(),
+				validation.Exists(app.db, "guests", "id"),
+			},
+		}})
 	if err != nil {
-		response.ReturnError(w, response.BadRequest(), http.StatusBadRequest)
+		response.ReturnNotFoundError(w, err)
 		return
 	}
 
+	guestId, _ := strconv.Atoi(r.Form.Get("id"))
 	guest, err := app.guest.Get(guestId)
 	if err != nil {
-		response.ReturnError(w, response.Make(response.WithCode(404)), http.StatusNotFound)
+		response.ReturnInternalError(w, err)
 		return
 	}
 
-	res := response.Make(response.WithNamedData("guest", guest))
+	res := response.Make(
+		response.WithNamedData("guest", guest),
+		response.WithMessage("The user was successfully retrieved."),
+	)
 
 	w.Write(res)
 }
 
 func (app application) updateGuest(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	err := validation.FormValidator{Request: r}.Validate(&validation.Ruleset{
+		Rules: &map[string][]validation.Rule{
+			"id": {
+				validation.NotEmpty(),
+				validation.Numeric(),
+				validation.Exists(app.db, "guests", "id"),
+			},
+			"name": {
+				validation.NotEmpty(),
+				validation.Length(1, 128),
+				validation.String(),
+			},
+			"last_name": {
+				validation.NotEmpty(),
+				validation.Length(1, 128),
+			},
+			"email": {
+				validation.NotEmpty(),
+				validation.Email(),
+				validation.DoesNotExist(app.db, "guests", "email"),
+			},
+			"phone": {
+				validation.NotEmpty(),
+				validation.Phone(),
+				validation.DoesNotExist(app.db, "guests", "phone"),
+			},
+			"country": {
+				validation.NotEmpty(),
+				validation.CountryCode(),
+			},
+		}})
 	if err != nil {
-		response.ReturnError(w, response.BadRequest(), http.StatusBadRequest)
+		response.ReturnBadRequestError(w, err)
 		return
 	}
 
-	guestId, err := strconv.Atoi(r.Form.Get("id"))
-	if err != nil {
-		response.ReturnError(w, response.BadRequest(), http.StatusBadRequest)
-		return
-	}
-
+	guestId, _ := strconv.Atoi(r.Form.Get("id"))
 	updatedGuest := &models.Guest{
 		Id:       guestId,
-		Name:     r.Form.Get("name"),
-		LastName: r.Form.Get("last_name"),
-		Email:    r.Form.Get("email"),
-		Phone:    r.Form.Get("phone"),
-		Country:  r.Form.Get("country"),
+		Name:     r.PostForm.Get("name"),
+		LastName: r.PostForm.Get("last_name"),
+		Email:    r.PostForm.Get("email"),
+		Phone:    r.PostForm.Get("phone"),
+		Country:  r.PostForm.Get("country"),
 	}
 
 	guest, err := app.guest.Update(updatedGuest)
 	if err != nil {
-		response.InternalServerError()
+		response.ReturnInternalError(w, err)
 		return
 	}
 
@@ -102,19 +175,27 @@ func (app application) updateGuest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app application) deleteGuest(w http.ResponseWriter, r *http.Request) {
-	guestId, err := strconv.Atoi(chi.URLParam(r, "id"))
+	err := validation.FormValidator{Request: r}.Validate(&validation.Ruleset{
+		Rules: &map[string][]validation.Rule{
+			"id": {
+				validation.NotEmpty(),
+				validation.Numeric(),
+				validation.Exists(app.db, "guests", "id"),
+			},
+		}})
 	if err != nil {
-		response.ReturnError(w, response.BadRequest(), http.StatusBadRequest)
+		response.ReturnNotFoundError(w, err)
 		return
 	}
 
+	guestId, _ := strconv.Atoi(r.Form.Get("id"))
 	guest, err := app.guest.Delete(guestId)
 	if err != nil {
-		response.ReturnError(w, response.Make(response.WithCode(404)), http.StatusNotFound)
+		response.ReturnInternalError(w, err)
 		return
 	}
 
-	res := response.Make(response.WithData(guest))
+	res := response.Make(response.WithData(guest), response.WithMessage("The user was successfully deleted."))
 
 	w.Write(res)
 }
