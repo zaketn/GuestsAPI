@@ -19,8 +19,6 @@ func Make(responseOptions ...OptsFunc) []byte {
 
 	res := &Response{options}
 
-	log.Println(*res)
-
 	if res.Code >= 400 {
 		res = &Response{
 			RespOpts{
