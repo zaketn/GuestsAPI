@@ -46,7 +46,6 @@ func (app application) createGuest(w http.ResponseWriter, r *http.Request) {
 				validation.DoesNotExist(app.db, "guests", "phone"),
 			},
 			"country": {
-				validation.NotEmpty(),
 				validation.CountryCode(),
 			},
 		}})
@@ -61,6 +60,16 @@ func (app application) createGuest(w http.ResponseWriter, r *http.Request) {
 		Email:    r.PostForm.Get("email"),
 		Phone:    r.PostForm.Get("phone"),
 		Country:  r.PostForm.Get("country"),
+	}
+
+	if newGuest.Country == "" {
+		country, err := matchCountryFromPhone(newGuest.Phone)
+		if err != nil {
+			response.ReturnInternalError(w, err)
+			return
+		}
+
+		newGuest.Country = country
 	}
 
 	guest, err := app.guest.Create(&newGuest)

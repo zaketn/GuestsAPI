@@ -78,6 +78,11 @@ func Phone() Rule {
 
 func CountryCode() Rule {
 	return func(fieldValue string) error {
+		// Костыль, для решения которого нужно в других правилах валидации учитывать правило на обязательность параметра
+		if fieldValue == "" {
+			return nil
+		}
+
 		countrySrc, err := ReadCountryWithPhones()
 		if err != nil {
 			return errors.New("failed to get the file with countries")
