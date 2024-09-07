@@ -16,7 +16,7 @@ func router(app *application) *chi.Mux {
 
 	r.Post("/guest", app.createGuest)
 	r.Get("/guest/", app.getGuest)
-	r.Put("/guest", app.updateGuest)
+	r.Patch("/guest", app.updateGuest)
 	r.Delete("/guest", app.deleteGuest)
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {

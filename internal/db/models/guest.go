@@ -1,7 +1,10 @@
 package models
 
 import (
+	"errors"
+	"fmt"
 	"github.com/jackc/pgx"
+	"strings"
 )
 
 type Guest struct {
@@ -75,30 +78,52 @@ func (m *GuestModel) GetAll() ([]*Guest, error) {
 }
 
 func (m *GuestModel) Update(newData *Guest) (*Guest, error) {
-	sql := `UPDATE guests SET 
-                  name = INITCAP($1),
-                  last_name = INITCAP($2),
-                  email = $3,
-                  phone = $4,
-                  country = UPPER($5)
-              WHERE id = $6
-              RETURNING id, name, last_name, email, phone, country`
+	fields := []struct {
+		name     string
+		value    string
+		modifier string
+	}{
+		{"name", newData.Name, "INITCAP"},
+		{"last_name", newData.LastName, "INITCAP"},
+		{"email", newData.Email, ""},
+		{"phone", newData.Phone, ""},
+		{"country", newData.Country, "UPPER"},
+	}
+
+	sql := `UPDATE guests SET`
+	params := []interface{}{}
+	paramIdx := 1
+
+	for _, field := range fields {
+		if field.value != "" {
+			if field.modifier != "" {
+				sql += fmt.Sprintf(" %s = %s($%d),", field.name, field.modifier, paramIdx)
+			} else {
+				sql += fmt.Sprintf(" %s = $%d,", field.name, paramIdx)
+			}
+			params = append(params, field.value)
+			paramIdx++
+		}
+	}
+
+	if len(params) == 0 {
+		return nil, errors.New("no fields to update")
+	}
+
+	sql = strings.TrimSuffix(sql, ",")
+	sql += fmt.Sprintf(" WHERE id = $%d RETURNING id, name, last_name, email, phone, country", paramIdx)
+	params = append(params, newData.Id)
 
 	updatedGuest := &Guest{}
 
-	err := m.DB.QueryRow(sql,
-		newData.Name,
-		newData.LastName,
-		newData.Email,
-		newData.Phone,
-		newData.Country,
-		newData.Id).Scan(
+	err := m.DB.QueryRow(sql, params...).Scan(
 		&updatedGuest.Id,
 		&updatedGuest.Name,
 		&updatedGuest.LastName,
 		&updatedGuest.Email,
 		&updatedGuest.Phone,
-		&updatedGuest.Country)
+		&updatedGuest.Country,
+	)
 
 	if err != nil {
 		return nil, err
