@@ -1,12 +1,9 @@
 package validation
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx"
-	"log"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -69,10 +66,9 @@ func Email() Rule {
 
 func Phone() Rule {
 	return func(fieldValue string) error {
-		regex := `^\+[\d\(\)\-]+$`
+		regex := `^\+[\d\(\)\-]+$` // Для лучшей валидности нужно усложнить регулярку
 		re := regexp.MustCompile(regex)
 		if !re.MatchString(fieldValue) {
-			log.Println(fieldValue)
 			return errors.New("phone number has invalid format")
 		}
 
@@ -82,18 +78,12 @@ func Phone() Rule {
 
 func CountryCode() Rule {
 	return func(fieldValue string) error {
-		byt, err := os.ReadFile("./pkg/validation/storage/country_phone.json")
+		countrySrc, err := ReadCountryWithPhones()
 		if err != nil {
-			log.Println(err)
 			return errors.New("failed to get the file with countries")
 		}
 
-		var dat map[string]interface{}
-		if err := json.Unmarshal(byt, &dat); err != nil {
-			panic(err)
-		}
-
-		_, countryExists := dat[strings.ToUpper(fieldValue)]
+		_, countryExists := countrySrc[strings.ToUpper(fieldValue)]
 
 		if countryExists {
 			return nil
