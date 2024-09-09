@@ -38,11 +38,13 @@ func (app application) createGuest(w http.ResponseWriter, r *http.Request) {
 			"email": {
 				validation.NotEmpty(),
 				validation.Email(),
+				validation.Length(5, 128),
 				validation.DoesNotExist(app.db, "guests", "email"),
 			},
 			"phone": {
 				validation.NotEmpty(),
 				validation.Phone(),
+				validation.Length(10, 128),
 				validation.DoesNotExist(app.db, "guests", "phone"),
 			},
 			"country": {
@@ -125,26 +127,23 @@ func (app application) updateGuest(w http.ResponseWriter, r *http.Request) {
 				validation.Exists(app.db, "guests", "id"),
 			},
 			"name": {
-				validation.NotEmpty(),
 				validation.Length(1, 128),
 				validation.String(),
 			},
 			"last_name": {
-				validation.NotEmpty(),
 				validation.Length(1, 128),
 			},
 			"email": {
-				validation.NotEmpty(),
 				validation.Email(),
+				validation.Length(5, 128),
 				validation.DoesNotExist(app.db, "guests", "email"),
 			},
 			"phone": {
-				validation.NotEmpty(),
 				validation.Phone(),
+				validation.Length(10, 128),
 				validation.DoesNotExist(app.db, "guests", "phone"),
 			},
 			"country": {
-				validation.NotEmpty(),
 				validation.CountryCode(),
 			},
 		}})

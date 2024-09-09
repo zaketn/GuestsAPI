@@ -10,7 +10,7 @@ import (
 type Guest struct {
 	Id       int    `json:"id"`
 	Name     string `json:"name"`
-	LastName string `json:"lastName"`
+	LastName string `json:"last_name"`
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
 	Country  string `json:"country"`
