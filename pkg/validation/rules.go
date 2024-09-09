@@ -21,6 +21,10 @@ func NotEmpty() Rule {
 
 func Length(min, max int) Rule {
 	return func(fieldValue string) error {
+		if fieldValue == "" {
+			return nil
+		}
+
 		if len(fieldValue) < min || len(fieldValue) >= max {
 			return errors.New(fmt.Sprintf("the value must be between %d and %d characters", min, max))
 		}
@@ -31,6 +35,10 @@ func Length(min, max int) Rule {
 
 func Numeric() Rule {
 	return func(fieldValue string) error {
+		if fieldValue == "" {
+			return nil
+		}
+
 		_, err := strconv.Atoi(fieldValue)
 		if err != nil {
 			return errors.New("must contains letters characters only")
@@ -42,6 +50,10 @@ func Numeric() Rule {
 
 func String() Rule {
 	return func(fieldValue string) error {
+		if fieldValue == "" {
+			return nil
+		}
+
 		regex := `^[a-zA-Z\p{L}]+$`
 		re := regexp.MustCompile(regex)
 		if !re.MatchString(fieldValue) {
@@ -54,6 +66,10 @@ func String() Rule {
 
 func Email() Rule {
 	return func(fieldValue string) error {
+		if fieldValue == "" {
+			return nil
+		}
+
 		regex := `^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`
 		re := regexp.MustCompile(regex)
 		if !re.MatchString(fieldValue) {
@@ -66,6 +82,10 @@ func Email() Rule {
 
 func Phone() Rule {
 	return func(fieldValue string) error {
+		if fieldValue == "" {
+			return nil
+		}
+
 		regex := `^\+[\d\(\)\-]+$` // Для лучшей валидности нужно усложнить регулярку
 		re := regexp.MustCompile(regex)
 		if !re.MatchString(fieldValue) {
@@ -100,6 +120,10 @@ func CountryCode() Rule {
 
 func Exists(db *pgx.Conn, table, columnName string) Rule {
 	return func(fieldValue string) error {
+		if fieldValue == "" {
+			return nil
+		}
+
 		query := fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM %s WHERE %s=$1)", table, columnName)
 
 		var exists bool
@@ -115,6 +139,10 @@ func Exists(db *pgx.Conn, table, columnName string) Rule {
 
 func DoesNotExist(db *pgx.Conn, table, columnName string) Rule {
 	return func(fieldValue string) error {
+		if fieldValue == "" {
+			return nil
+		}
+
 		exists := Exists(db, table, columnName)(fieldValue)
 
 		if exists == nil {
